@@ -1,0 +1,14 @@
+import { and, count, desc, eq } from "drizzle-orm";
+import { Hono } from "hono";
+import { requirePermission, type ClinicRole } from "@dentivohq/auth";
+import { auditLogs, clinicPatients, createDatabase, patientProfiles } from "@dentivohq/db";
+import { createPatientSchema, paginationSchema } from "@dentivohq/validation";
+import type { AppEnv } from "../types";
+import { AppError } from "../errors";
+
+export const patientsRoute = new Hono<AppEnv>();
+function permit(role: string, permission: "patient.read" | "patient.create") { try { requirePermission(role as ClinicRole, permission); } catch { throw new AppError("AUTHORIZATION_DENIED", "You do not have permission to access patients.", 403); } }
+
+patientsRoute.get("/", async (c) => { permit(c.get("membershipRole"), "patient.read"); const query = paginationSchema.safeParse(c.req.query()); if (!query.success) throw new AppError("VALIDATION_ERROR", "Pagination is invalid."); const clinicId = c.get("clinicId"); const db = createDatabase(c.env.DATABASE_URL); const offset = (query.data.page - 1) * query.data.pageSize; const [rows, totals] = await Promise.all([db.select({ id: clinicPatients.id, firstName: patientProfiles.firstName, lastName: patientProfiles.lastName, email: patientProfiles.email, phone: patientProfiles.phone, createdAt: clinicPatients.createdAt }).from(clinicPatients).innerJoin(patientProfiles, eq(patientProfiles.id, clinicPatients.patientProfileId)).where(and(eq(clinicPatients.clinicId, clinicId), eq(clinicPatients.archived, false))).orderBy(desc(clinicPatients.createdAt)).limit(query.data.pageSize).offset(offset), db.select({ value: count() }).from(clinicPatients).where(and(eq(clinicPatients.clinicId, clinicId), eq(clinicPatients.archived, false)))]); return c.json({ data: rows, meta: { ...query.data, total: totals[0]?.value ?? 0 } }); });
+
+patientsRoute.post("/", async (c) => { permit(c.get("membershipRole"), "patient.create"); const input = createPatientSchema.safeParse(await c.req.json()); if (!input.success) throw new AppError("VALIDATION_ERROR", "Patient details are invalid."); const clinicId = c.get("clinicId"); const db = createDatabase(c.env.DATABASE_URL); const patient = await db.transaction(async (tx) => { const [profile] = await tx.insert(patientProfiles).values(input.data).returning(); if (!profile) throw new Error("PATIENT_INSERT_FAILED"); const [relationship] = await tx.insert(clinicPatients).values({ clinicId, patientProfileId: profile.id }).returning(); if (!relationship) throw new Error("CLINIC_PATIENT_INSERT_FAILED"); await tx.insert(auditLogs).values({ clinicId, actorUserId: c.get("user").id, action: "PATIENT_CREATED", resourceType: "clinic_patient", resourceId: relationship.id }); return { ...profile, clinicPatientId: relationship.id }; }); return c.json({ data: patient }, 201); });

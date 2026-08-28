@@ -1,0 +1,14 @@
+node_modules/
+.pnpm-store/
+.env
+.env.*
+!.env.example
+dist/
+.astro/
+.wrangler/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.DS_Store
+/apps/dashboard/dashboard/

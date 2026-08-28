@@ -1,0 +1,7 @@
+---
+import Brand from "../../components/Brand.astro";
+import { BookingFlow } from "../../components/BookingFlow";
+import "../../styles.css";
+const apiUrl = import.meta.env.PUBLIC_API_URL ?? "http://localhost:8787";
+---
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width"/><meta name="robots" content="noindex"/><title>Book an appointment — DentivoHQ</title></head><body class="booking-shell"><header class="container header"><Brand/><span>Secure booking</span></header><main><BookingFlow client:only="react" clinicSlug="northstar-dental-studio" apiUrl={apiUrl}/></main></body></html>

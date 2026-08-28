@@ -1,0 +1,36 @@
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { secureHeaders } from "hono/secure-headers";
+import { createAuth } from "@dentivohq/auth";
+import { createDatabase } from "@dentivohq/db";
+import type { AppEnv } from "./types";
+import { errorResponse } from "./errors";
+import { authenticate, resolveClinic } from "./middleware/auth";
+import { clinicsRoute } from "./routes/clinics";
+import { appointmentsRoute } from "./routes/appointments";
+import { publicBookingRoute } from "./routes/public-booking";
+import { filesRoute } from "./routes/files";
+import { clinicResourcesRoute } from "./routes/clinic-resources";
+import { patientsRoute } from "./routes/patients";
+import { consoleRoute } from "./routes/console";
+import { processNotifications } from "./notifications";
+
+const app = new Hono<AppEnv>();
+app.use("*", secureHeaders());
+app.use("*", async (c, next) => cors({ origin: [c.env.LANDING_URL, c.env.DASHBOARD_URL, c.env.CONSOLE_URL], credentials: true, allowHeaders: ["content-type"], allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"] })(c, next));
+app.onError(errorResponse);
+app.get("/health", (c) => c.json({ data: { status: "ok", service: "DentivoHQ API" } }));
+app.all("/api/auth/*", async (c) => createAuth(createDatabase(c.env.DATABASE_URL), { BETTER_AUTH_SECRET: c.env.BETTER_AUTH_SECRET, BETTER_AUTH_URL: c.env.BETTER_AUTH_URL, GOOGLE_CLIENT_ID: c.env.GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET: c.env.GOOGLE_CLIENT_SECRET, trustedOrigins: [c.env.LANDING_URL, c.env.DASHBOARD_URL, c.env.CONSOLE_URL] }).handler(c.req.raw));
+app.route("/api/v1/public/clinics", publicBookingRoute);
+app.use("/api/v1/clinics/*", authenticate);
+app.use("/api/v1/clinics", authenticate);
+app.use("/api/v1/clinics/:clinicId/*", resolveClinic);
+app.route("/api/v1/clinics", clinicsRoute);
+app.route("/api/v1/clinics/:clinicId", clinicResourcesRoute);
+app.route("/api/v1/clinics/:clinicId/appointments", appointmentsRoute);
+app.route("/api/v1/clinics/:clinicId/patients", patientsRoute);
+app.route("/api/v1/clinics/:clinicId/files", filesRoute);
+app.use("/api/v1/console/*", authenticate);
+app.route("/api/v1/console", consoleRoute);
+
+export default { fetch: app.fetch, scheduled: async (_controller: ScheduledController, env: AppEnv["Bindings"], ctx: ExecutionContext) => ctx.waitUntil(processNotifications(env)) };

@@ -1,0 +1,1 @@
+{"name":"@dentivohq/auth","version":"0.1.0","private":true,"type":"module","exports":"./src/index.ts","scripts":{"typecheck":"tsc -p tsconfig.json","build":"tsc -p tsconfig.json","test":"vitest run"},"dependencies":{"@dentivohq/db":"workspace:*","better-auth":"^1.7.2","drizzle-orm":"^0.45.2"},"devDependencies":{"typescript":"^7.0.2","vitest":"^4.1.11"}}

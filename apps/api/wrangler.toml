@@ -1,0 +1,23 @@
+name = "dentivohq-api"
+main = "src/index.ts"
+compatibility_date = "2026-08-28"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+EMAIL_FROM = "DentivoHQ <appointments@example.test>"
+LANDING_URL = "http://localhost:4321"
+DASHBOARD_URL = "http://localhost:5173"
+CONSOLE_URL = "http://localhost:5174"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "dentivohq-files"
+preview_bucket_name = "dentivohq-files-preview"
+
+[[ratelimits]]
+name = "PUBLIC_BOOKING_RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 20, period = 60 }
+
+[triggers]
+crons = ["*/5 * * * *"]

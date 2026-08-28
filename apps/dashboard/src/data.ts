@@ -1,0 +1,8 @@
+export type Appointment = { id: string; time: string; endTime: string; patient: string; phone: string; email: string; service: string; dentist: string; location: string; status: "Confirmed" | "Checked in" | "Pending"; notes: string };
+export const appointments: Appointment[] = [
+  { id: "1", time: "9:00 AM", endTime: "9:45 AM", patient: "Olivia Bennett", phone: "(555) 123-4567", email: "olivia@example.test", service: "Dental Check-up", dentist: "Dr. Sarah Lee", location: "Bright Smiles Clinic", status: "Confirmed", notes: "First visit." },
+  { id: "2", time: "10:00 AM", endTime: "10:45 AM", patient: "James Carter", phone: "(555) 234-5678", email: "james@example.test", service: "Teeth Cleaning", dentist: "Dr. Sarah Lee", location: "Bright Smiles Clinic", status: "Checked in", notes: "Prefers early morning appointments." },
+  { id: "3", time: "11:00 AM", endTime: "11:45 AM", patient: "Mia Thompson", phone: "(555) 345-6789", email: "mia@example.test", service: "Fillings", dentist: "Dr. Michael Chen", location: "Bright Smiles Clinic", status: "Pending", notes: "Confirm insurance details at reception." },
+  { id: "4", time: "1:00 PM", endTime: "1:45 PM", patient: "Ethan Walker", phone: "(555) 456-7890", email: "ethan@example.test", service: "Crown Consultation", dentist: "Dr. Michael Chen", location: "Bright Smiles Clinic", status: "Confirmed", notes: "Follow-up consultation." },
+  { id: "5", time: "2:00 PM", endTime: "2:45 PM", patient: "Ava Martinez", phone: "(555) 567-8901", email: "ava@example.test", service: "Teeth Whitening", dentist: "Dr. Sarah Lee", location: "Bright Smiles Clinic", status: "Confirmed", notes: "No known allergies." }
+];
