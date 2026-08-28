@@ -14,13 +14,22 @@ import { clinicResourcesRoute } from "./routes/clinic-resources";
 import { patientsRoute } from "./routes/patients";
 import { consoleRoute } from "./routes/console";
 import { processNotifications } from "./notifications";
+import { sendEmail } from "./services";
 
 const app = new Hono<AppEnv>();
 app.use("*", secureHeaders());
 app.use("*", async (c, next) => cors({ origin: [c.env.LANDING_URL, c.env.DASHBOARD_URL, c.env.CONSOLE_URL], credentials: true, allowHeaders: ["content-type"], allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"] })(c, next));
 app.onError(errorResponse);
 app.get("/health", (c) => c.json({ data: { status: "ok", service: "DentivoHQ API" } }));
-app.all("/api/auth/*", async (c) => createAuth(createDatabase(c.env.DATABASE_URL), { BETTER_AUTH_SECRET: c.env.BETTER_AUTH_SECRET, BETTER_AUTH_URL: c.env.BETTER_AUTH_URL, GOOGLE_CLIENT_ID: c.env.GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET: c.env.GOOGLE_CLIENT_SECRET, trustedOrigins: [c.env.LANDING_URL, c.env.DASHBOARD_URL, c.env.CONSOLE_URL] }).handler(c.req.raw));
+app.get("/api/v1/auth/config", (c) => c.json({ data: { googleEnabled: Boolean(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET) } }));
+app.all("/api/auth/*", async (c) => createAuth(createDatabase(c.env.DATABASE_URL), {
+  BETTER_AUTH_SECRET: c.env.BETTER_AUTH_SECRET,
+  BETTER_AUTH_URL: c.env.BETTER_AUTH_URL,
+  GOOGLE_CLIENT_ID: c.env.GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET: c.env.GOOGLE_CLIENT_SECRET,
+  trustedOrigins: [c.env.LANDING_URL, c.env.DASHBOARD_URL, c.env.CONSOLE_URL],
+  sendEmail: (message) => sendEmail(c.env.RESEND_API_KEY, c.env.EMAIL_FROM, message)
+}).handler(c.req.raw));
 app.route("/api/v1/public/clinics", publicBookingRoute);
 app.use("/api/v1/clinics/*", authenticate);
 app.use("/api/v1/clinics", authenticate);

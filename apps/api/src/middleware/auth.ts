@@ -4,10 +4,18 @@ import { createAuth } from "@dentivohq/auth";
 import { clinicMembers, createDatabase } from "@dentivohq/db";
 import type { AppEnv } from "../types";
 import { AppError } from "../errors";
+import { sendEmail } from "../services";
 
 export const authenticate: MiddlewareHandler<AppEnv> = async (c, next) => {
   const db = createDatabase(c.env.DATABASE_URL);
-  const auth = createAuth(db, { BETTER_AUTH_SECRET: c.env.BETTER_AUTH_SECRET, BETTER_AUTH_URL: c.env.BETTER_AUTH_URL, GOOGLE_CLIENT_ID: c.env.GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET: c.env.GOOGLE_CLIENT_SECRET, trustedOrigins: [c.env.LANDING_URL, c.env.DASHBOARD_URL, c.env.CONSOLE_URL] });
+  const auth = createAuth(db, {
+    BETTER_AUTH_SECRET: c.env.BETTER_AUTH_SECRET,
+    BETTER_AUTH_URL: c.env.BETTER_AUTH_URL,
+    GOOGLE_CLIENT_ID: c.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: c.env.GOOGLE_CLIENT_SECRET,
+    trustedOrigins: [c.env.LANDING_URL, c.env.DASHBOARD_URL, c.env.CONSOLE_URL],
+    sendEmail: (message) => sendEmail(c.env.RESEND_API_KEY, c.env.EMAIL_FROM, message)
+  });
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!session) throw new AppError("AUTHENTICATION_REQUIRED", "Sign in to continue.", 401);
   c.set("user", { id: session.user.id, email: session.user.email, name: session.user.name, platformAdmin: Boolean((session.user as { platformAdmin?: boolean }).platformAdmin) });

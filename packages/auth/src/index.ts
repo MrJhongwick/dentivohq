@@ -11,6 +11,7 @@ export type AuthEnv = {
   GOOGLE_CLIENT_ID: string | undefined;
   GOOGLE_CLIENT_SECRET: string | undefined;
   trustedOrigins: string[];
+  sendEmail: (message: { to: string; subject: string; text: string }) => Promise<unknown>;
 };
 
 export function createAuth(db: Database, env: AuthEnv) {
@@ -24,8 +25,20 @@ export function createAuth(db: Database, env: AuthEnv) {
     trustedOrigins: env.trustedOrigins,
     database: drizzleAdapter(db, { provider: "pg", schema: { user: users, session: sessions, account: accounts, verification: verifications } }),
     user: { additionalFields: { platformAdmin: { type: "boolean", fieldName: "platform_admin", input: false, defaultValue: false } } },
-    emailAndPassword: { enabled: true, requireEmailVerification: true },
-    emailVerification: { sendOnSignUp: true },
+    emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: true,
+      sendResetPassword: async ({ user, url }) => {
+        await env.sendEmail({ to: user.email, subject: "Reset your DentivoHQ password", text: `Reset your password: ${url}` });
+      }
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      sendOnSignIn: true,
+      sendVerificationEmail: async ({ user, url }) => {
+        await env.sendEmail({ to: user.email, subject: "Verify your DentivoHQ email", text: `Verify your email address: ${url}` });
+      }
+    },
     socialProviders,
     advanced: { useSecureCookies: env.BETTER_AUTH_URL.startsWith("https://") }
   });
